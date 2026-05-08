@@ -57,8 +57,7 @@ const teclasPulsadas = {};
 document.addEventListener('keydown', (e) => {
     if (!teclasPulsadas[e.code]) {
         // Iniciar ataque con X o Z (una sola vez por pulsación)
-        if ((e.code === 'KeyX' || e.code === 'KeyZ') && birraman.state !== 'attack') {
-            birraman.state = 'attack';
+        if ((e.code === 'KeyX' || e.code === 'KeyZ') && birraman.attackTimer <= 0) {
             birraman.attackTimer = birraman.ATTACK_DURATION;
         }
     }
@@ -79,13 +78,17 @@ document.addEventListener('keyup', (e) => {
 const FRAME_W = Math.floor(1024 / 3);  // 341px de ancho por frame
 const FRAME_H = Math.floor(1024 / 2);  // 512px de alto por fila
 
-// No hay labels en v4, usamos toda la altura del frame sin recorte de texto.
+// Añadimos un margen para recortar el sangrado (bleeding) de los frames adyacentes
+// Ajustado a 10px y 15px para limpiar los bordes sin cortar el martillo del personaje.
+const MARGIN_X = 10;
+const MARGIN_Y = 15;
+
 const FRAMES_ABS = {
-    idle:   [ { sx: 0*FRAME_W, sy: 0,       sw: FRAME_W, sh: FRAME_H } ],
-    run:    [ { sx: 1*FRAME_W, sy: 0,       sw: FRAME_W, sh: FRAME_H },
-              { sx: 2*FRAME_W, sy: 0,       sw: FRAME_W, sh: FRAME_H } ],
-    attack: [ { sx: 0*FRAME_W, sy: FRAME_H, sw: FRAME_W, sh: FRAME_H } ],
-    jump:   [ { sx: 1*FRAME_W, sy: FRAME_H, sw: FRAME_W, sh: FRAME_H } ],
+    idle:   [ { sx: 0*FRAME_W + MARGIN_X, sy: 0 + MARGIN_Y,       sw: FRAME_W - MARGIN_X*2, sh: FRAME_H - MARGIN_Y*2 } ],
+    run:    [ { sx: 1*FRAME_W + MARGIN_X, sy: 0 + MARGIN_Y,       sw: FRAME_W - MARGIN_X*2, sh: FRAME_H - MARGIN_Y*2 },
+              { sx: 2*FRAME_W + MARGIN_X, sy: 0 + MARGIN_Y,       sw: FRAME_W - MARGIN_X*2, sh: FRAME_H - MARGIN_Y*2 } ],
+    attack: [ { sx: 0*FRAME_W + MARGIN_X, sy: FRAME_H + MARGIN_Y, sw: FRAME_W - MARGIN_X*2, sh: FRAME_H - MARGIN_Y*2 } ],
+    jump:   [ { sx: 1*FRAME_W + MARGIN_X, sy: FRAME_H + MARGIN_Y, sw: FRAME_W - MARGIN_X*2, sh: FRAME_H - MARGIN_Y*2 } ],
 };
 
 const ANIMACIONES = {
@@ -108,15 +111,27 @@ spriteSheet.onload = () => {
     const offCtx = spriteCanvas.getContext('2d');
     offCtx.drawImage(spriteSheet, 0, 0);
 
-    // Color-key: verde lima puro G>200, R<60, B<60 → alpha=0
-    // Borde anti-aliased (semi-verde) → semi-transparente proporcional
+    // Color-key: Tomamos el píxel (0,0) como color de fondo dinámicamente
     const imgData = offCtx.getImageData(0, 0, spriteCanvas.width, spriteCanvas.height);
     const data = imgData.data;
+    
+    const bgR = data[0];
+    const bgG = data[1];
+    const bgB = data[2];
+
     for (let i = 0; i < data.length; i += 4) {
         const r = data[i], g = data[i+1], b = data[i+2];
-        if (g > 180 && r < 80 && b < 80) {
-            const greenRatio = Math.min((g - 180) / 75, (80 - r) / 80, (80 - b) / 80);
-            data[i + 3] = Math.max(0, Math.round(data[i+3] * (1 - greenRatio)));
+        
+        // Calculamos la diferencia con el color de fondo
+        const diff = Math.abs(r - bgR) + Math.abs(g - bgG) + Math.abs(b - bgB);
+        
+        if (diff < 80) {
+            // Fondo puro o muy similar -> Transparente total
+            data[i + 3] = 0;
+        } else if (diff < 160) {
+            // Bordes suavizados -> Semi-transparencia gradual
+            const alphaRatio = (diff - 80) / 80;
+            data[i + 3] = Math.round(data[i + 3] * alphaRatio);
         }
     }
     offCtx.putImageData(imgData, 0, 0);
@@ -196,6 +211,7 @@ function actualizar() {
     for (const p of plataformas) {
         // Comprobación de colisión clásica (si los dos rectángulos se superponen)
         if (
+            birraman.velocityY >= 0 &&                    // Solo colisionar si está cayendo
             birraman.x + birraman.width  > p.x &&         // BirraMan no está a la izquierda
             birraman.x                   < p.x + p.w &&   // BirraMan no está a la derecha
             birraman.y + birraman.height > p.y &&         // Parte de abajo de BirraMan toca la plataforma
@@ -297,14 +313,12 @@ function dibujarBirramanSprite(x, y, w, h) {
     const anim = ANIMACIONES[birraman.state];
     const frameInfo = anim.frames[animFrame] || anim.frames[0];
 
-    // El sprite v3 tiene el personaje bien centrado en el frame con padding.
-    // Los pies están al ~78% de la altura del frame (hay espacio + texto label abajo).
-    // Escalamos a h*1.6 para que el personaje se vea lo suficientemente grande.
-    const drawH = h * 1.6;
+    // Ajustamos la escala tras el recorte de los márgenes
+    const drawH = h * 1.5;
     const drawW = drawH * (frameInfo.sw / frameInfo.sh);
     const drawX = x + w / 2 - drawW / 2;
 
-    const FOOT_RATIO = 0.72; // los pies del personaje están aquí dentro del frame
+    const FOOT_RATIO = 0.73; // Re-calculado para que los pies toquen el suelo con el nuevo recorte
     const drawY = (y + h) - drawH * FOOT_RATIO;
 
     ctx.save();
