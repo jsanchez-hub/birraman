@@ -1,0 +1,136 @@
+/* Importamos una fuente más gruesa y estilo cómic, idéntica a la imagen */
+@import url('https://fonts.googleapis.com/css2?family=Lilita+One&display=swap');
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #1a1a1a; /* Fondo oscuro por si la pantalla es muy grande */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Lilita One', cursive; /* Fuente idéntica al menú */
+}
+
+#game-container {
+    /* 90vmin = 90% del lado más pequeño de la ventana.
+       Como la imagen es cuadrada, esto la mantiene proporcional
+       y siempre cabe en la ventana sin scrollbar */
+    width: 90vmin;
+    height: 90vmin;
+    max-width: 900px;  /* Tamaño máximo para pantallas muy grandes */
+    max-height: 900px;
+    background-image: url('file:///home/ale/.gemini/antigravity/brain/a02cf47e-da43-47ff-a682-bca63668bd7c/birraman_title_screen_v5_clean_1777657928675.png');
+    background-size: cover;
+    background-position: center top;
+    position: relative;
+    overflow: hidden;
+    border: 4px solid #3e2723;
+    border-radius: 12px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.9);
+}
+
+.screen {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: none;
+    flex-direction: column;
+    /* Los botones van al centro verticalmente, en la mitad superior */
+    justify-content: center;
+    align-items: center;
+    /* Empujamos los botones hacia arriba con padding para que queden en el
+       tercio central de la pantalla, sin tapar a BirraMan que está abajo */
+    padding-bottom: 0vh;
+    box-sizing: border-box;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* Sombra suave detrás de los botones para que se lean bien */
+.screen::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 55%;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.25), transparent);
+    z-index: 1;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1; /* Espacio entre los botones */
+    z-index: 2; /* Para que estén por encima de la sombra */
+    align-items: center;
+    width: 100%;
+}
+
+.menu-title {
+    color: #fbc02d;
+    font-size: 50px;
+    text-shadow: 4px 4px 0 #000;
+    z-index: 2;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
+
+.menu-buttons button {
+    background: transparent;
+    border: none;
+    color: #ffffff; /* Blanco por defecto como 'OPTIONS' */
+    font-size: 42px;
+    font-family: 'Lilita One', cursive;
+    cursor: pointer;
+    /* Borde negro sólido perfecto para estilo cómic */
+    -webkit-text-stroke: 2px #222;
+    text-shadow: 3px 3px 0 #222, 0 5px 10px rgba(0,0,0,0.5);
+    transition: all 0.1s; 
+    min-width: 400px;
+    margin: 8px 0;
+    letter-spacing: 2px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px; /* Espacio entre los iconos y el texto */
+}
+
+/* Efecto al pasar el ratón por encima (Hover) */
+.menu-buttons button:hover {
+    color: #ffe066; /* Cambia a amarillo cerveza */
+    transform: scale(1.1);
+    text-shadow: 3px 3px 0 #222, 0 5px 15px rgba(0,0,0,0.8), 0 0 25px #fbc02d;
+}
+
+/* Efecto al hacer clic (Active) */
+.menu-buttons button:active {
+    transform: translateY(4px) scale(1.05); /* Bajan un poco al pulsar */
+}
+
+/* Estilos para el selector de idioma en Opciones */
+label {
+    color: white;
+    font-size: 28px;
+    text-shadow: 3px 3px 0 #000;
+    z-index: 2;
+    margin-bottom: 10px;
+}
+
+select {
+    padding: 10px 20px;
+    font-size: 22px;
+    font-family: 'Fredoka One', cursive;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    cursor: pointer;
+    background-color: #fff;
+    border: 3px solid #3e2723;
+    z-index: 2;
+}
